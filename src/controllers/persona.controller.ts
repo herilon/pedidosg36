@@ -9,10 +9,10 @@ import {
 } from '@loopback/repository';
 import {
   del, get,
-  getModelSchemaRef, param, patch, post, put, requestBody,
+  getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody,
   response
 } from '@loopback/rest';
-import {Persona} from '../models';
+import {Credenciales, Persona} from '../models';
 import {PersonaRepository} from '../repositories';
 import {AutenticacionService} from '../services';
 const fetch = require('node-fetch');
@@ -57,6 +57,27 @@ export class PersonaController {
         console.log(data);
       });
     return p;
+  }
+
+  @post('/personas/identificar')
+  @response(200, {
+    description: 'Identificación de usuarios'
+  })
+  async identificar(
+    @requestBody() creds: Credenciales
+  ) {
+    let p = await this.servicioAutenticacion.IdentificarPersona(creds.usuario, creds.clave);
+
+    if (p) {
+      let token = this.servicioAutenticacion.GenerarTokenJWT(p)
+      return {
+        datos: {nombre: p.nombres, correo: p.correo, id: p.id},
+        tk: token
+      }
+    } else {
+      throw new HttpErrors[401]('Datos invalidos');
+    }
+
   }
 
   @get('/personas/count')
